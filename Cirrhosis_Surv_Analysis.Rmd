@@ -1,0 +1,408 @@
+---
+title: "Cirrhosis_Survival_Analysis"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-04-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/Users/eswarkamisetti/Desktop/Cirrhosis_Surv_Analysis")
+```
+
+
+```{r}
+cirr_data <- read.csv("cirr.csv", stringsAsFactors = FALSE)
+```
+
+```{r}
+str(cirr_data)
+```
+
+
+```{r}
+getwd()
+```
+
+
+```{r}
+df <- read.csv("cirr.csv")
+```
+
+
+```{r}
+colnames(df)
+```
+
+
+```{r}
+# Renaming column for clarity
+names(df)[names(df) == "Status"] <- "Event"
+
+# Encoding D = 1; C and CL = 0
+df$Event <- ifelse(df$Event == "D", 1, 0)
+
+#
+```
+
+
+
+```{r}
+table(df$Event)
+```
+
+```{r}
+df_trial <- df[1:312, ]
+
+# Confirming the number of rows
+nrow(df_trial)
+
+#The first 312 cases in the dataset participated in the randomized trial and contain largely complete data. 
+#The additional 112 cases did not participate in the clinical trial but consented to have basic measurements recorded and to be followed for survival. 
+#Hence have a lot of missing data, so they are dropped
+```
+
+```{r}
+str(df_trial)
+colSums(is.na(df_trial))
+
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+# Cholesterol
+ggplot(df_trial, aes(x = Cholesterol)) +
+  geom_histogram(aes(y = ..density..), fill = "skyblue", color = "black", bins = 30) +
+  geom_density(color = "darkblue", size = 1.2) +
+  ggtitle("Distribution of Cholesterol") +
+  theme_minimal()
+
+# Copper
+ggplot(df_trial, aes(x = Copper)) +
+  geom_histogram(aes(y = ..density..), fill = "orange", color = "black", bins = 30) +
+  geom_density(color = "darkred", size = 1.2) +
+  ggtitle("Distribution of Copper") +
+  theme_minimal()
+
+# Tryglicerides
+ggplot(df_trial, aes(x = Tryglicerides)) +
+  geom_histogram(aes(y = ..density..), fill = "palegreen", color = "black", bins = 30) +
+  geom_density(color = "forestgreen", size = 1.2) +
+  ggtitle("Distribution of Tryglicerides") +
+  theme_minimal()
+
+# Platelets
+ggplot(df_trial, aes(x = Platelets)) +
+  geom_histogram(aes(y = ..density..), fill = "plum", color = "black", bins = 30) +
+  geom_density(color = "purple", size = 1.2) +
+  ggtitle("Distribution of Platelets") +
+  theme_minimal()
+
+```
+
+```{r}
+library(dplyr)
+
+df_trial <- df_trial %>%
+  mutate(
+    Cholesterol = ifelse(is.na(Cholesterol), median(Cholesterol, na.rm = TRUE), Cholesterol),
+    Copper = ifelse(is.na(Copper), median(Copper, na.rm = TRUE), Copper),
+    Tryglicerides = ifelse(is.na(Tryglicerides), median(Tryglicerides, na.rm = TRUE), Tryglicerides),
+    Platelets = ifelse(is.na(Platelets), median(Platelets, na.rm = TRUE), Platelets)
+  )
+
+```
+
+```{r}
+colSums(is.na(df_trial[c("Cholesterol", "Copper", "Tryglicerides", "Platelets")]))
+
+```
+
+```{r}
+# creating a survival object
+
+library(survival)
+surv_obj <- Surv(time=df_trial$N_Days, event= df_trial$Event)
+```
+
+
+
+```{r}
+#Kaplan Meier Survival Curve
+
+library(survminer)
+
+fit_sex <- survfit (surv_obj ~ Sex, data = df_trial)
+
+ggsurvplot(fit_sex, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Sex")
+```
+
+```{r}
+fit_overall <- survfit(surv_obj ~ 1, data = df_trial)
+
+# Plot it
+ggsurvplot(fit_overall, 
+           data = df_trial,
+           pval = FALSE,
+           conf.int = TRUE,
+           risk.table = TRUE,
+           palette = "black",
+           title = "Overall Kaplan-Meier Survival Curve",
+           xlab = "Time (Days)",
+           ylab = "Survival Probability")
+```
+
+```{r}
+fit_Drug <- survfit (surv_obj ~ Drug, data = df_trial)
+
+ggsurvplot(fit_Drug, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Drug")
+```
+
+```{r}
+fit_Ascites <- survfit (surv_obj ~ Ascites, data = df_trial)
+
+ggsurvplot(fit_Ascites, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Ascites")
+```
+
+```{r}
+fit_Hepatomegaly <- survfit (surv_obj ~ Hepatomegaly, data = df_trial)
+
+ggsurvplot(fit_Hepatomegaly, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Hepatomegaly")
+```
+
+```{r}
+fit_Spiders <- survfit (surv_obj ~ Spiders, data = df_trial)
+
+ggsurvplot(fit_Spiders, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Spiders")
+```
+
+```{r}
+fit_Edema <- survfit (surv_obj ~ Edema, data = df_trial)
+
+ggsurvplot(fit_Edema, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Edema")
+```
+
+```{r}
+fit_Stage <- survfit (surv_obj ~ Stage, data = df_trial)
+
+ggsurvplot(fit_Stage, data = df_trial, pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Stage")
+```
+
+```{r}
+df_trial$Age_Quartile <- cut(df_trial$Age,
+                             breaks = quantile(df_trial$Age, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE),
+                             include.lowest = TRUE,
+                             labels = c("Q1", "Q2", "Q3", "Q4"))
+
+```
+
+
+
+```{r}
+fit_age_q <- survfit(surv_obj ~ Age_Quartile, data = df_trial)
+
+# Plot
+ggsurvplot(fit_age_q,
+           data = df_trial,
+           pval = TRUE,
+           conf.int = TRUE,
+           risk.table = TRUE,
+           palette = "Dark2",
+           title = "Kaplan-Meier Survival Curve by Age Quartile",
+           xlab = "Time (Days)",
+           ylab = "Survival Probability")
+```
+
+
+```{r}
+library(survival)
+library(survminer)
+
+
+surv_obj <- Surv(time = df_trial$N_Days, event = df_trial$Event)
+
+# Bilirubin
+ggcoxfunctional(Surv(N_Days, Event) ~ Bilirubin, data = df_trial)
+
+ggcoxfunctional(Surv(N_Days, Event) ~ Cholesterol, data = df_trial)
+
+ggcoxfunctional(Surv(N_Days, Event) ~ Copper, data = df_trial)
+
+ggcoxfunctional(Surv(N_Days, Event) ~ Alk_Phos, data = df_trial)
+
+ggcoxfunctional(Surv(N_Days, Event) ~ SGOT, data = df_trial)
+
+ggcoxfunctional(Surv(N_Days, Event) ~ Tryglicerides, data = df_trial)
+
+ggcoxfunctional(Surv(N_Days, Event) ~ Platelets, data = df_trial)
+
+# Albumin
+ggcoxfunctional(Surv(N_Days, Event) ~ Albumin, data = df_trial)
+
+# Prothrombin
+ggcoxfunctional(Surv(N_Days, Event) ~ Prothrombin, data = df_trial)
+
+
+
+
+```
+
+
+
+
+```{r}
+ggcoxfunctional(Surv(N_Days, Event) ~ log(Bilirubin), data = df_trial)
+
+```
+
+
+```{r}
+ggcoxfunctional(Surv(N_Days, Event) ~ log(Copper), data = df_trial)
+
+```
+
+```{r}
+library(splines)
+
+cox_model_spline <- coxph(Surv(N_Days, Event) ~ 
+                            log(Bilirubin + 0.1) + 
+                            Albumin + 
+                            ns(Prothrombin, df = 3) + 
+                            ns(SGOT, df = 3) + 
+                            ns(Alk_Phos, df = 3) + 
+                            ns(Copper, df = 3) + 
+                            Sex + Ascites + Hepatomegaly + Spiders + Edema +  Stage + Age_Quartile,
+                          data = df_trial)
+
+termplot(cox_model_spline, se = TRUE, col.term = "blue")
+
+
+```
+
+```{r}
+summary (cox_model_spline)
+```
+
+```{r}
+library(survminer)
+ggforest(cox_model_spline, data = df_trial)
+
+```
+
+```{r}
+summary(cox_model_spline)
+```
+
+
+
+```{r}
+quantile(df_trial$Age, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+
+```
+
+```{r}
+# Load necessary library
+library(survival)
+library(splines)
+
+# Ask for user inputs
+bilirubin <- as.numeric(readline(prompt = "Enter Bilirubin (mg/dL): "))
+albumin <- as.numeric(readline(prompt = "Enter Albumin (g/dL): "))
+edema <- readline(prompt = "Enter Edema status (N/S/Y): ")
+age_quartile <- as.integer(readline(prompt = "Enter Age Quartile (1 to 4): "))
+
+# model coefficients from your fitted Cox model (Hard coded as we dont want to retrain the model again and Fast run time)
+coef <- list(
+  log_bilirubin = 0.61708,
+  albumin = -0.76804,
+  edema_Y = 0.80430,
+  age = c(0, 0, 0.77040, 0.73326)  # Q1 is reference; Q3 and Q4 significant
+)
+
+# Baseline survival at 3 years (adjust based on your survfit if needed)
+baseline_survival_3y <- 0.75
+
+# Compute linear predictor
+lp <- coef$log_bilirubin * log(bilirubin + 0.1) +
+      coef$albumin * albumin +
+      ifelse(edema == "Y", coef$edema_Y, 0) +
+      coef$age[age_quartile]
+
+# Compute survival probability
+surv_prob <- baseline_survival_3y ^ exp(lp)
+
+# Print result
+cat("\nPredicted 3-Year Survival Probability:", round(surv_prob * 100, 2), "%\n")
+
+```
+
+
+```{r}
+library(shiny)
+
+# Define Cox model coefficients (pre-trained)
+coef <- list(
+  log_bilirubin = 0.61708,
+  albumin = -0.76804,
+  edema_Y = 0.80430,
+  age = c(0, 0, 0.77040, 0.73326)  # Q1 is reference
+)
+
+baseline_survival_3y <- 0.75  # Hardcoded baseline survival at 3 years
+
+ui <- fluidPage(
+  titlePanel("3-Year Survival Prediction for Cirrhosis Patients"),
+  sidebarLayout(
+    sidebarPanel(
+      numericInput("bilirubin", "Bilirubin (mg/dL):", value = 1.2, min = 0.1, step = 0.1),
+      numericInput("albumin", "Albumin (g/dL):", value = 3.5, min = 1.5, step = 0.1),
+      selectInput("edema", "Edema Status:", choices = c("None" = "N", "Slight" = "S", "Marked" = "Y")),
+      selectInput("age_quartile", "Age Group (years):",
+                  choices = c("Q1: 26–42" = 1, "Q2: 43–49" = 2, "Q3: 50–56" = 3, "Q4: 57–78" = 4))
+    ),
+    mainPanel(
+      h3("Predicted 3-Year Survival Probability:"),
+      verbatimTextOutput("prediction")
+    )
+  )
+)
+
+server <- function(input, output) {
+  output$prediction <- renderPrint({
+    log_bili <- log(input$bilirubin + 0.1)
+    age_index <- as.numeric(input$age_quartile)
+
+    lp <- coef$log_bilirubin * log_bili +
+          coef$albumin * input$albumin +
+          ifelse(input$edema == "Y", coef$edema_Y, 0) +
+          coef$age[age_index]
+
+    surv_prob <- baseline_survival_3y ^ exp(lp)
+    paste0(round(surv_prob * 100, 2), "%")
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+
+
+
+```
+
